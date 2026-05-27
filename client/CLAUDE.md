@@ -274,16 +274,16 @@ const chartData = computed(() => {
 ```
 
 **Use CSS variables for themes:**
+The design tokens live in `src/App.vue`'s `:root` block (single source of truth) — reference them, don't hardcode hex or invent new vars:
 ```css
-:root {
-  --primary-color: #3b82f6;
-  --danger-color: #ef4444;
-}
-
 .button {
-  background: var(--primary-color);
+  background: var(--color-primary);      /* indigo #4f46e5 */
+  color: var(--surface);                 /* white */
 }
+.button:hover { background: var(--color-primary-hover); }
+.alert { background: var(--danger-soft); color: var(--danger-ink); }
 ```
+Key tokens: `--color-primary` / `--color-accent` (brand), `--bg` / `--surface` / `--surface-2`, `--text` / `--text-muted` / `--border`, `--space-*` (4px scale), `--radius`, `--shadow-sm`, and status `--success`/`--info`/`--warning`/`--danger` (+ `-soft`/`-ink`).
 
 **Responsive design:**
 - Use rem/em units for scalability

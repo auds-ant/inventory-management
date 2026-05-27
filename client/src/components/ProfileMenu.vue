@@ -1,9 +1,10 @@
 <template>
-  <div class="profile-menu">
+  <div class="profile-menu" :class="{ 'is-collapsed': collapsed }">
     <button
       class="profile-button"
       @click="toggleDropdown"
       @blur="handleBlur"
+      :aria-label="collapsed ? currentUser.name : undefined"
     >
       <div class="avatar">
         {{ getInitials(currentUser.name) }}
@@ -78,6 +79,13 @@ import { ref, computed } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../composables/useI18n'
 
+const props = defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const { currentUser, logout, getInitials } = useAuth()
 const { t } = useI18n()
 
@@ -118,15 +126,17 @@ const handleLogout = () => {
 <style scoped>
 .profile-menu {
   position: relative;
+  width: 100%;
 }
 
 .profile-button {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 0.875rem;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -134,15 +144,15 @@ const handleLogout = () => {
 }
 
 .profile-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--bg);
+  border-color: var(--border-strong);
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -150,17 +160,25 @@ const handleLogout = () => {
   font-weight: 600;
   font-size: 0.75rem;
   letter-spacing: 0.025em;
+  flex-shrink: 0;
 }
 
 .profile-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
 }
 
 .chevron {
-  color: #64748b;
+  color: var(--text-muted);
   transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .chevron-open {
@@ -169,11 +187,13 @@ const handleLogout = () => {
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
+  bottom: calc(100% + 0.5rem);
+  top: auto;
+  left: 0;
+  right: auto;
   min-width: 280px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -185,14 +205,14 @@ const handleLogout = () => {
   display: flex;
   gap: 0.875rem;
   align-items: center;
-  background: #f8fafc;
+  background: var(--bg);
 }
 
 .avatar-large {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -210,14 +230,14 @@ const handleLogout = () => {
 
 .user-name {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text);
   font-size: 0.938rem;
   margin-bottom: 0.25rem;
 }
 
 .user-email {
   font-size: 0.813rem;
-  color: #64748b;
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -225,7 +245,7 @@ const handleLogout = () => {
 
 .dropdown-divider {
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border);
   margin: 0.5rem 0;
 }
 
@@ -243,33 +263,33 @@ const handleLogout = () => {
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #334155;
+  color: var(--text);
 }
 
 .dropdown-item:hover {
-  background: #f8fafc;
+  background: var(--bg);
 }
 
 .dropdown-item svg {
-  color: #64748b;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .dropdown-item.logout {
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .dropdown-item.logout svg {
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .dropdown-item.logout:hover {
-  background: #fef2f2;
+  background: var(--danger-soft);
 }
 
 .task-badge {
   margin-left: auto;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
@@ -277,5 +297,46 @@ const handleLogout = () => {
   border-radius: 12px;
   min-width: 20px;
   text-align: center;
+}
+
+/* ── Collapsed (icon-only) state ────────────────────────────── */
+
+.profile-menu.is-collapsed .profile-button {
+  justify-content: center;
+  padding: 0.5rem;
+  gap: 0;
+}
+
+.profile-menu.is-collapsed .profile-name,
+.profile-menu.is-collapsed .chevron {
+  display: none;
+}
+
+/* Dropdown opens to the right so it escapes the narrow rail */
+.profile-menu.is-collapsed .dropdown-menu {
+  left: calc(100% + 0.5rem);
+  bottom: 0;
+  top: auto;
+}
+
+/* ── Auto icon-only below 1024px (matches App.vue breakpoint) ── */
+
+@media (max-width: 1024px) {
+  .profile-button {
+    justify-content: center;
+    padding: 0.5rem;
+    gap: 0;
+  }
+
+  .profile-name,
+  .chevron {
+    display: none;
+  }
+
+  .dropdown-menu {
+    left: calc(100% + 0.5rem);
+    bottom: 0;
+    top: auto;
+  }
 }
 </style>

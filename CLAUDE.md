@@ -68,7 +68,11 @@ npm install && npm run dev
 - Styles: `client/src/App.vue`
 
 ## Design System
-- Colors: Slate/gray (#0f172a, #64748b, #e2e8f0)
-- Status: green/blue/yellow/red
+- Theme tokens: CSS variables in `client/src/App.vue` `:root` are the single source of truth — use `var(--…)`, not raw hex
+- Primary: indigo (`--color-primary` #4f46e5); Accent/success: bright green (`--color-accent` #22c55e)
+- Background: light blue-grey (`--bg` #eef2f7); Surfaces: white (`--surface`); Text/muted/border: `--text` #0f172a / `--text-muted` #64748b / `--border` #e2e8f0
+- Layout: left vertical sidebar nav (`--sidebar-w` 248px); main content capped at `--content-max` 1280px
+- Spacing: `--space-*` scale (4px base); cards use `--radius` + `--shadow-sm`
+- Status: success(green)/info(indigo)/warning(amber)/danger(red) via `--success`/`--info`/`--warning`/`--danger` (+ `--*-soft`/`--*-ink`)
 - Charts: Custom SVG, CSS Grid for layouts
 - No emojis in UI
