@@ -11,6 +11,7 @@ Use the Task tool with these specialized subagents for appropriate tasks:
   - Examples: Creating components, fixing reactivity issues, performance optimization, complex state management
   - **MANDATORY RULE: ANY time you need to create or significantly modify a .vue file, you MUST delegate to vue-expert**
 - **code-reviewer**: Use after writing significant code to review quality and best practices
+- **debugger**: Use to investigate runtime errors, read stack traces, and pinpoint root causes (frontend console errors, backend tracebacks, failing requests). Investigates and proposes fixes with `file:line` references — does not apply edits itself (no Edit/Write access)
 - **Explore**: Use for understanding codebase structure, searching for patterns, or answering questions about how components work
 - **general-purpose**: Use for complex multi-step tasks or when other agents don't fit
 
@@ -68,7 +69,11 @@ npm install && npm run dev
 - Styles: `client/src/App.vue`
 
 ## Design System
-- Colors: Slate/gray (#0f172a, #64748b, #e2e8f0)
-- Status: green/blue/yellow/red
+- Theme tokens: CSS variables in `client/src/App.vue` `:root` are the single source of truth — use `var(--…)`, not raw hex
+- Primary: indigo (`--color-primary` #4f46e5); Accent/success: bright green (`--color-accent` #22c55e)
+- Background: light blue-grey (`--bg` #eef2f7); Surfaces: white (`--surface`); Text/muted/border: `--text` #0f172a / `--text-muted` #64748b / `--border` #e2e8f0
+- Layout: left vertical sidebar nav (`--sidebar-w` 248px); main content capped at `--content-max` 1280px
+- Spacing: `--space-*` scale (4px base); cards use `--radius` + `--shadow-sm`
+- Status: success(green)/info(indigo)/warning(amber)/danger(red) via `--success`/`--info`/`--warning`/`--danger` (+ `--*-soft`/`--*-ink`)
 - Charts: Custom SVG, CSS Grid for layouts
 - No emojis in UI

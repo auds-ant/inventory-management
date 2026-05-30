@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
+from datetime import date
 from pydantic import BaseModel
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders
 
@@ -90,17 +91,6 @@ class DemandForecast(BaseModel):
     trend: str
     period: str
 
-class BacklogItem(BaseModel):
-    id: str
-    order_id: str
-    item_sku: str
-    item_name: str
-    quantity_needed: int
-    quantity_available: int
-    days_delayed: int
-    priority: str
-    has_purchase_order: Optional[bool] = False
-
 class PurchaseOrder(BaseModel):
     id: str
     backlog_item_id: str
@@ -112,6 +102,22 @@ class PurchaseOrder(BaseModel):
     created_date: str
     notes: Optional[str] = None
 
+class BacklogItem(BaseModel):
+    id: str
+    order_id: str
+    item_sku: str
+    item_name: str
+    quantity_needed: int
+    quantity_available: int
+    days_delayed: int
+    priority: str
+    has_purchase_order: Optional[bool] = False
+    # The linked purchase order (if any). Returned so the UI can show "View PO"
+    # and render PO details after a page reload, not just within the session
+    # where the PO was created.
+    purchase_order_id: Optional[str] = None
+    purchase_order: Optional[PurchaseOrder] = None
+
 class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
     supplier_name: str
@@ -119,6 +125,25 @@ class CreatePurchaseOrderRequest(BaseModel):
     unit_cost: float
     expected_delivery_date: str
     notes: Optional[str] = None
+
+class Task(BaseModel):
+    id: int
+    title: str
+    priority: str
+    dueDate: str
+    status: str
+
+class CreateTaskRequest(BaseModel):
+    title: str
+    priority: str = "medium"
+    dueDate: str
+
+# In-memory stores for runtime-created records (reset on restart, like all mock data).
+# Task IDs start at 1000 to avoid colliding with the mock task IDs (1-4) seeded
+# client-side in useAuth.js, since the frontend merges both lists by id.
+tasks_store: List[dict] = []
+_next_task_id = 1000
+_next_po_id = len(purchase_orders) + 1
 
 # API endpoints
 @app.get("/")
@@ -168,14 +193,15 @@ def get_demand_forecasts():
 
 @app.get("/api/backlog", response_model=List[BacklogItem])
 def get_backlog():
-    """Get backlog items with purchase order status"""
-    # Add has_purchase_order flag to each backlog item
+    """Get backlog items, each enriched with its linked purchase order (if any)"""
     result = []
     for item in backlog_items:
         item_dict = dict(item)
-        # Check if this backlog item has a purchase order
-        has_po = any(po["backlog_item_id"] == item["id"] for po in purchase_orders)
-        item_dict["has_purchase_order"] = has_po
+        # Attach the matching purchase order so the UI reflects PO state across reloads
+        matching_po = next((po for po in purchase_orders if po["backlog_item_id"] == item["id"]), None)
+        item_dict["has_purchase_order"] = matching_po is not None
+        item_dict["purchase_order_id"] = matching_po["id"] if matching_po else None
+        item_dict["purchase_order"] = matching_po
         result.append(item_dict)
     return result
 
@@ -303,6 +329,76 @@ def get_monthly_trends():
     result = list(months.values())
     result.sort(key=lambda x: x['month'])
     return result
+
+@app.get("/api/purchase-orders", response_model=List[PurchaseOrder])
+def get_purchase_orders():
+    """Get all purchase orders"""
+    return purchase_orders
+
+@app.post("/api/purchase-orders", response_model=PurchaseOrder, status_code=201)
+def create_purchase_order(request: CreatePurchaseOrderRequest):
+    """Create a purchase order for a backlog item"""
+    global _next_po_id
+
+    # Validate the referenced backlog item exists
+    if not any(item["id"] == request.backlog_item_id for item in backlog_items):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Backlog item {request.backlog_item_id} not found"
+        )
+
+    new_po = {
+        "id": f"PO-{_next_po_id:04d}",
+        "backlog_item_id": request.backlog_item_id,
+        "supplier_name": request.supplier_name,
+        "quantity": request.quantity,
+        "unit_cost": request.unit_cost,
+        "expected_delivery_date": request.expected_delivery_date,
+        "status": "Pending",
+        "created_date": date.today().isoformat(),
+        "notes": request.notes,
+    }
+    _next_po_id += 1
+    purchase_orders.append(new_po)
+    return new_po
+
+@app.get("/api/tasks", response_model=List[Task])
+def get_tasks():
+    """Get runtime-created tasks (mock per-user tasks are seeded client-side)"""
+    return tasks_store
+
+@app.post("/api/tasks", response_model=Task, status_code=201)
+def create_task(request: CreateTaskRequest):
+    """Create a new task"""
+    global _next_task_id
+    new_task = {
+        "id": _next_task_id,
+        "title": request.title,
+        "priority": request.priority,
+        "dueDate": request.dueDate,
+        "status": "pending",
+    }
+    _next_task_id += 1
+    tasks_store.append(new_task)
+    return new_task
+
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: int):
+    """Delete a task by id"""
+    index = next((i for i, t in enumerate(tasks_store) if t["id"] == task_id), None)
+    if index is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    tasks_store.pop(index)
+    return {"success": True, "id": task_id}
+
+@app.patch("/api/tasks/{task_id}", response_model=Task)
+def toggle_task(task_id: int):
+    """Toggle a task's completion status between pending and completed"""
+    task = next((t for t in tasks_store if t["id"] == task_id), None)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    task["status"] = "completed" if task["status"] == "pending" else "pending"
+    return task
 
 if __name__ == "__main__":
     import uvicorn

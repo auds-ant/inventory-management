@@ -304,6 +304,32 @@ export default {
     noTasks: 'No tasks yet. Add your first task above!'
   },
 
+  // Purchase Order Modal
+  purchaseOrder: {
+    titleCreate: 'Create Purchase Order',
+    titleView: 'Purchase Order',
+    itemContext: 'Backlog Item',
+    itemName: 'Item',
+    itemSku: 'SKU',
+    quantityNeeded: 'Quantity Needed',
+    supplierName: 'Supplier Name',
+    supplierNamePlaceholder: 'Enter supplier name...',
+    quantity: 'Quantity',
+    unitCost: 'Unit Cost',
+    expectedDelivery: 'Expected Delivery Date',
+    notes: 'Notes',
+    notesPlaceholder: 'Optional notes...',
+    submit: 'Create Purchase Order',
+    cancel: 'Cancel',
+    close: 'Close',
+    poId: 'PO Number',
+    supplier: 'Supplier',
+    total: 'Total Cost',
+    status: 'Status',
+    createdDate: 'Created Date',
+    noData: 'No purchase order found.'
+  },
+
   // Language
   language: {
     english: 'English',
